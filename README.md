@@ -3,7 +3,7 @@ victims-plugin-nexus
 
 About
 -----
-Nexus plugin to prevent distributing vulnerable artifacts
+Nexus plugin to prevent distribution of vulnerable artifacts
 
 Prerequisites
 -------------
@@ -15,7 +15,7 @@ http://maven.apache.org/download.cgi
 
 Install
 ------
-Unzip victims-plugin-nexus-2.10.0-02-bundle.zip in the `$NEXUS_HOME/nexus/WEB-INF/plugin-repository/`
+Unzip victims-plugin-nexus-2.10.0-02-bundle.zip in the `$NEXUS_HOME/nexus/WEB-INF/plugin-repository`
 directory and restart. 
 
 Author
