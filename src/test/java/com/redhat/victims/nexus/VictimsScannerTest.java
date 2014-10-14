@@ -14,6 +14,7 @@ import org.junit.Test;
 
 import java.io.FileInputStream;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
@@ -21,52 +22,61 @@ import static org.mockito.Mockito.when;
 
 
 public class VictimsScannerTest
-		extends TestSupport {
-	private VictimsNexusScanner underTest;
+        extends TestSupport {
+    private VictimsNexusScanner underTest;
 
-	@Before
-	public void setUp() throws Exception {
-		underTest = new VictimsNexusScanner();
-	}
+    @Before
+    public void setUp() throws Exception {
+        underTest = new VictimsNexusScanner();
+    }
 
-	@Test
-	public void passChecks() throws Exception {
+    @Test
+    public void passChecks() throws Exception {
 
-		StorageFileItem item = mock(StorageFileItem.class);
+        //setup
+        StorageFileItem item = mock(StorageFileItem.class);
 
-		String name = "struts2-core-2.3.16.3.jar";
-		FileInputStream fis = new FileInputStream(getClass().getResource("/not_vulnerable/").getPath() + name);
-		when(item.getName()).thenReturn(name);
-		when(item.getInputStream()).thenReturn(fis);
+        String name = "struts2-core-2.3.16.3.jar";
+        FileInputStream fis = new FileInputStream(getClass().getResource("/not_vulnerable/").getPath() + name);
 
-		assertThat(underTest.isVulnerableFingerprint(item), is(false));
-		assertThat(underTest.isVulnerableMetadata(item), is(false));
-	}
+        when(item.getName()).thenReturn(name);
+        when(item.getInputStream()).thenReturn(fis);
 
-	@Test
-	public void failFingerprintCheck() throws Exception {
+        //checks
+        assertThat(underTest.getFingerprintVulnerabilities(item).size(), is(0));
+        assertThat(underTest.getMetadataVulnerabilities(item).size(), is(0));
+    }
 
-		StorageFileItem item = mock(StorageFileItem.class);
+    @Test
+    public void failFingerprintCheck() throws Exception {
 
-		String name = "struts2-core-2.3.12.jar";
-		FileInputStream fis = new FileInputStream(getClass().getResource("/failed_fingerprint/").getPath() + name);
-		when(item.getName()).thenReturn(name);
-		when(item.getInputStream()).thenReturn(fis);
+        //setup
+        StorageFileItem item = mock(StorageFileItem.class);
 
-		assertThat(underTest.isVulnerableFingerprint(item), is(true));
-	}
+        String name = "struts2-core-2.3.12.jar";
+        FileInputStream fis = new FileInputStream(getClass().getResource("/failed_fingerprint/").getPath() + name);
 
-	@Test
-	public void failMetadataCheck() throws Exception {
+        when(item.getName()).thenReturn(name);
+        when(item.getInputStream()).thenReturn(fis);
 
-		StorageFileItem item = mock(StorageFileItem.class);
+        //checks
+        assertThat(underTest.getFingerprintVulnerabilities(item).size(), greaterThan(0));
+    }
 
-		String name = "cxf-rt-ws-security-2.5.8.jar";
-		FileInputStream fis = new FileInputStream(getClass().getResource("/failed_metadata/").getPath() + name);
-		when(item.getName()).thenReturn(name);
-		when(item.getInputStream()).thenReturn(fis);
+    @Test
+    public void failMetadataCheck() throws Exception {
 
-		assertThat(underTest.isVulnerableMetadata(item), is(true));
+        //setup
+        StorageFileItem item = mock(StorageFileItem.class);
 
-	}
+        String name = "cxf-rt-ws-security-2.5.8.jar";
+        FileInputStream fis = new FileInputStream(getClass().getResource("/failed_metadata/").getPath() + name);
+
+        when(item.getName()).thenReturn(name);
+        when(item.getInputStream()).thenReturn(fis);
+
+        //checks
+        assertThat(underTest.getMetadataVulnerabilities(item).size(), greaterThan(0));
+
+    }
 }

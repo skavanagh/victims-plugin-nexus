@@ -20,24 +20,24 @@ import com.google.common.base.Preconditions;
 
 @Named(VictimsNexusScannerProcessor.NAME)
 public class VictimsNexusScannerRepository
-		implements RepositoryCustomizer {
-	private final RequestStrategy processor;
+        implements RepositoryCustomizer {
+    private final RequestStrategy processor;
 
-	@Inject
-	public VictimsNexusScannerRepository(final @Named(VictimsNexusScannerProcessor.NAME) RequestStrategy processor) {
+    @Inject
+    public VictimsNexusScannerRepository(final @Named(VictimsNexusScannerProcessor.NAME) RequestStrategy processor) {
 
-		this.processor = Preconditions.checkNotNull(processor);
-	}
+        this.processor = Preconditions.checkNotNull(processor);
+    }
 
-	@Override
-	public boolean isHandledRepository(final Repository repository) {
+    @Override
+    public boolean isHandledRepository(final Repository repository) {
 
-		return repository.getRepositoryKind().isFacetAvailable(ProxyRepository.class);
+        return repository.getRepositoryKind().isFacetAvailable(ProxyRepository.class);
 
-	}
+    }
 
-	@Override
-	public void configureRepository(final Repository repository) throws ConfigurationException {
-		repository.registerRequestStrategy(VictimsNexusScannerProcessor.NAME, processor);
-	}
+    @Override
+    public void configureRepository(final Repository repository) throws ConfigurationException {
+        repository.registerRequestStrategy(VictimsNexusScannerProcessor.NAME, processor);
+    }
 }

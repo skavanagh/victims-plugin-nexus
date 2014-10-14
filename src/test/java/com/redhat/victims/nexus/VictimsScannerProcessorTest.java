@@ -15,6 +15,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
 
+import java.util.HashSet;
+
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -22,37 +24,73 @@ import static org.mockito.Mockito.*;
 
 
 public class VictimsScannerProcessorTest
-		extends TestSupport {
-	private VictimsNexusScannerProcessor underTest;
+        extends TestSupport {
+    private VictimsNexusScannerProcessor underTest;
 
-	@Mock
-	private EventBus eventBus;
+    @Mock
+    private EventBus eventBus;
 
-	@Mock
-	private VictimsNexusScanner scanner;
-
-
-	@Before
-	public void setUp() throws Exception {
-		underTest = new VictimsNexusScannerProcessor(eventBus, Lists.newArrayList(scanner));
-	}
+    @Mock
+    private VictimsNexusScanner scanner;
 
 
-	@Test
-	public void vulnerabilityFingerprinted() {
-		StorageFileItem item = mock(StorageFileItem.class, RETURNS_DEEP_STUBS);
-		when(scanner.isVulnerableFingerprint(any(StorageFileItem.class))).thenReturn(true);
-		assertThat(underTest.isVulnerableFingerprint(item), is(true));
-		verify(scanner).isVulnerableFingerprint(item);
-		verify(eventBus, times(1)).post(any(VulnerableItemFoundEvent.class));
-	}
+    @Before
+    public void setUp() throws Exception {
+        underTest = new VictimsNexusScannerProcessor(eventBus, Lists.newArrayList(scanner));
+    }
 
-	@Test
-	public void vulnerabilityMetadata() {
-		StorageFileItem item = mock(StorageFileItem.class, RETURNS_DEEP_STUBS);
-		when(scanner.isVulnerableMetadata(any(StorageFileItem.class))).thenReturn(true);
-		assertThat(underTest.isVulnerableMetadata(item), is(true));
-		verify(scanner).isVulnerableMetadata(item);
-		verify(eventBus, times(1)).post(any(VulnerableItemFoundEvent.class));
-	}
+
+    @Test
+    public void vulnerabilityFingerprinted() {
+
+        //setup
+        StorageFileItem item = mock(StorageFileItem.class, RETURNS_DEEP_STUBS);
+
+        HashSet<String> cves = new HashSet<String>();
+        cves.add("CVE-XXXX-YYYY");
+
+        when(scanner.getFingerprintVulnerabilities(any(StorageFileItem.class))).thenReturn(cves);
+
+        //checks
+        assertThat(underTest.getFingerprintVulnerabilities(item).size(), is(1));
+
+        verify(scanner).getFingerprintVulnerabilities(item);
+        verify(eventBus, times(1)).post(any(VulnerableItemFoundEvent.class));
+    }
+
+    @Test
+    public void vulnerabilityMetadata() {
+
+        //setup
+        StorageFileItem item = mock(StorageFileItem.class, RETURNS_DEEP_STUBS);
+
+        HashSet<String> cves = new HashSet<String>();
+        cves.add("CVE-XXXX-YYYY");
+
+        when(scanner.getMetadataVulnerabilities(any(StorageFileItem.class))).thenReturn(cves);
+
+        //checks
+        assertThat(underTest.getMetadataVulnerabilities(item).size(), is(1));
+
+        verify(scanner).getMetadataVulnerabilities(item);
+        verify(eventBus, times(1)).post(any(VulnerableItemFoundEvent.class));
+    }
+
+    @Test
+    public void notVulnerable() {
+
+        //setup
+        StorageFileItem item = mock(StorageFileItem.class, RETURNS_DEEP_STUBS);
+
+        when(scanner.getMetadataVulnerabilities(any(StorageFileItem.class))).thenReturn(new HashSet<String>());
+        when(scanner.getFingerprintVulnerabilities(any(StorageFileItem.class))).thenReturn(new HashSet<String>());
+
+        //checks
+        assertThat(underTest.getMetadataVulnerabilities(item).size(), is(0));
+        assertThat(underTest.getFingerprintVulnerabilities(item).size(), is(0));
+
+        verify(scanner).getMetadataVulnerabilities(item);
+        verify(scanner).getFingerprintVulnerabilities(item);
+        verify(eventBus, times(0)).post(any(VulnerableItemFoundEvent.class));
+    }
 }

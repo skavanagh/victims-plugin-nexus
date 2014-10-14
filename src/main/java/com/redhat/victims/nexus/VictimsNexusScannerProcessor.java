@@ -1,17 +1,19 @@
 /**
  * Copyright 2014 Sean Kavanagh - sean.p.kavanagh6@gmail.com
- * 
+ *
  * This code is distributed under the terms of the GNU Affero General
  * Public License (see <http://www.gnu.org/licenses/agpl.html>).
  */
 package com.redhat.victims.nexus;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.ResourceBundle;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 
+import com.redhat.victims.util.Mode;
+import com.redhat.victims.util.VictimsConfig;
 import org.sonatype.nexus.proxy.IllegalOperationException;
 import org.sonatype.nexus.proxy.ItemNotFoundException;
 import org.sonatype.nexus.proxy.ResourceStoreRequest;
@@ -29,116 +31,120 @@ import com.google.common.base.Preconditions;
 
 @Named(VictimsNexusScannerProcessor.NAME)
 public class VictimsNexusScannerProcessor
-		extends ComponentSupport
-		implements RequestStrategy {
-	
-	public static final String NAME = "vulnerability-scanner";
-	
-	private static ResourceBundle props = ResourceBundle.getBundle("VictimsConfig");
-	private static final String VICTIMS_FINGERPRINT = props.getString("victims.fingerprint");
-	private static final String VICTIMS_METADATA = props.getString("victims.metadata");
-	private static final String ERR_FINGERPRINT_MSG = props.getString("victims.fingerprint.err");
-	private static final String ERR_METADATA_MSG = props.getString("victims.metadata.err");
-	
-	private final EventBus eventBus;
-	private final List<VictimsNexusScanner> scanners;
+        extends ComponentSupport
+        implements RequestStrategy {
+
+    public static final String NAME = "vulnerability-scanner";
+
+    private static final Mode FINGERPRINT_MODE = Mode.valueOf(VictimsConfig.getProperty("victims.fingerprint"));
+    private static final Mode METADATA_MODE = Mode.valueOf(VictimsConfig.getProperty("victims.metadata"));
 
 
-	@Inject
-	public VictimsNexusScannerProcessor(final EventBus eventBus,
-	                                    final List<VictimsNexusScanner> scanners) {
+    private static final String ERR_FINGERPRINT_MSG = VictimsConfig.getProperty("victims.fingerprint.err");
+    private static final String ERR_METADATA_MSG = VictimsConfig.getProperty("victims.metadata.err");
+
+    private final EventBus eventBus;
+    private final List<VictimsNexusScanner> scanners;
 
 
-		this.eventBus = Preconditions.checkNotNull(eventBus);
-		this.scanners = Preconditions.checkNotNull(scanners);
+    @Inject
+    public VictimsNexusScannerProcessor(final EventBus eventBus,
+                                        final List<VictimsNexusScanner> scanners) {
 
 
-		for (VictimsNexusScanner scanner : scanners) {
-			log.debug("Scanner: {}", scanner);
-		}
-
-	}
-
-	boolean isVulnerableMetadata(final StorageFileItem item) {
-		log.debug("Scanning item for vulnerabilities: {}", item.getPath());
-
-		boolean vulnerable = false;
-		for (VictimsNexusScanner scanner : scanners) {
-			if (scanner.isVulnerableMetadata(item)) {
-				vulnerable = true;
-				eventBus.post(new VulnerableItemFoundEvent(item.getRepositoryItemUid().getRepository(), item));
-			}
-		}
-
-		return vulnerable;
-	}
+        this.eventBus = Preconditions.checkNotNull(eventBus);
+        this.scanners = Preconditions.checkNotNull(scanners);
 
 
-	boolean isVulnerableFingerprint(final StorageFileItem item) {
-		log.debug("Scanning item for vulnerabilities: {}", item.getPath());
+        for (VictimsNexusScanner scanner : scanners) {
+            log.debug("Scanner: {}", scanner);
+        }
 
-		boolean vulnerable = false;
-		for (VictimsNexusScanner scanner : scanners) {
-			if (scanner.isVulnerableFingerprint(item)) {
-				vulnerable = true;
-				eventBus.post(new VulnerableItemFoundEvent(item.getRepositoryItemUid().getRepository(), item));
-			}
-		}
+    }
 
-		return vulnerable;
-	}
+    HashSet<String> getFingerprintVulnerabilities(final StorageFileItem item) {
+        log.debug("Scanning item for vulnerabilities: {}", item.getPath());
 
-	@Override
-	public void onServing(final Repository repository, final ResourceStoreRequest resourceStoreRequest,
-	                      final StorageItem storageItem)
-			throws ItemNotFoundException, IllegalOperationException {
-		if (storageItem instanceof StorageFileItem) {
-			StorageFileItem file = (StorageFileItem) storageItem;
+        HashSet<String> cves = new HashSet<String>();
 
-			//check file via fingerprint
-			if (!"disabled".equals(VICTIMS_FINGERPRINT) && isVulnerableFingerprint(file)) {
+        for (VictimsNexusScanner scanner : scanners) {
+            if (!(cves = scanner.getFingerprintVulnerabilities(item)).isEmpty()) {
+                eventBus.post(new VulnerableItemFoundEvent(item.getRepositoryItemUid().getRepository(), item));
+            }
+        }
 
-				if ("warning".equals(VICTIMS_FINGERPRINT)) {
+        return cves;
+    }
 
-					log.warn(NAME + " : " + storageItem.getName() + " - " + ERR_FINGERPRINT_MSG);
+    HashSet<String> getMetadataVulnerabilities(final StorageFileItem item) {
+        log.debug("Scanning item for vulnerabilities: {}", item.getPath());
 
-				} else {
+        HashSet<String> cves = new HashSet<String>();
 
-					log.error(NAME + " : " + storageItem.getName() + " - " + ERR_FINGERPRINT_MSG);
-					throw new IllegalStateException(NAME + " : " + storageItem.getName() + " - " + ERR_FINGERPRINT_MSG);
+        for (VictimsNexusScanner scanner : scanners) {
+            if (!(cves = scanner.getMetadataVulnerabilities(item)).isEmpty()) {
+                eventBus.post(new VulnerableItemFoundEvent(item.getRepositoryItemUid().getRepository(), item));
+            }
+        }
 
-				}
-			}
-			//check file via metadata
-			if (!"disabled".equals(VICTIMS_METADATA) && isVulnerableMetadata(file)) {
+        return cves;
+    }
 
-				if ("warning".equals(VICTIMS_METADATA)) {
+    @Override
+    public void onServing(final Repository repository, final ResourceStoreRequest resourceStoreRequest,
+                          final StorageItem storageItem)
+            throws ItemNotFoundException, IllegalOperationException {
+        if (storageItem instanceof StorageFileItem) {
+            StorageFileItem file = (StorageFileItem) storageItem;
 
-					log.warn(NAME + " : " + storageItem.getName() + " - " + ERR_METADATA_MSG);
+            HashSet<String> cves;
 
-				} else {
+            //check file via fingerprint
+            if (!FINGERPRINT_MODE.equals(Mode.disabled) && !(cves = getFingerprintVulnerabilities(file)).isEmpty()) {
 
-					log.error(NAME + " : " + storageItem.getName() + " - " + ERR_METADATA_MSG);
-					throw new IllegalStateException(NAME + " : " + storageItem.getName() + " - " + ERR_METADATA_MSG);
+                String errorMsg = createErrorMsg(storageItem, ERR_FINGERPRINT_MSG, cves);
+                if (FINGERPRINT_MODE.equals(Mode.warning)) {
+                    log.warn(errorMsg);
+                } else {
+                    log.error(errorMsg);
+                    throw new IllegalStateException(errorMsg);
+                }
+            }
 
-				}
-			}
+            //check file via metadata
+            if (!METADATA_MODE.equals(Mode.disabled) && !(cves = getMetadataVulnerabilities(file)).isEmpty()) {
+
+                String errorMsg = createErrorMsg(storageItem, ERR_METADATA_MSG, cves);
+                if (METADATA_MODE.equals(Mode.warning)) {
+                    log.warn(errorMsg);
+                } else {
+                    log.error(errorMsg);
+                    throw new IllegalStateException(errorMsg);
+                }
+            }
 
 
-		}
-	}
+        }
+    }
 
-	@Override
-	public void onRemoteAccess(final ProxyRepository proxyRepository, final ResourceStoreRequest resourceStoreRequest,
-	                           final StorageItem storageItem)
-			throws ItemNotFoundException, IllegalOperationException {
+    @Override
+    public void onRemoteAccess(final ProxyRepository proxyRepository, final ResourceStoreRequest resourceStoreRequest,
+                               final StorageItem storageItem)
+            throws ItemNotFoundException, IllegalOperationException {
 
-	}
+    }
 
-	@Override
-	public void onHandle(final Repository repository, final ResourceStoreRequest resourceStoreRequest,
-	                     final Action action)
-			throws ItemNotFoundException, IllegalOperationException {
+    @Override
+    public void onHandle(final Repository repository, final ResourceStoreRequest resourceStoreRequest,
+                         final Action action)
+            throws ItemNotFoundException, IllegalOperationException {
 
-	}
+    }
+
+    /**
+     * create and return error message
+     */
+    private String createErrorMsg(StorageItem storageItem, String errMsg, HashSet<String> cves) {
+        return NAME + " : " + storageItem.getName() + " " + errMsg + " " + cves.toString();
+    }
 }

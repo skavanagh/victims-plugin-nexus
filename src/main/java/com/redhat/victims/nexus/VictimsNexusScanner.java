@@ -22,94 +22,79 @@ import java.util.HashSet;
 @Named
 @Singleton
 public class VictimsNexusScanner
-		extends ComponentSupport
+        extends ComponentSupport
 
 {
 
 
-	/**
-	 * check if storage file is vulnerable via fingerprint
-	 *
-	 * @param item storage item
-	 * @return vulnerability indicator
-	 */
-	public boolean isVulnerableFingerprint(final StorageFileItem item) {
+    /**
+     * check if storage file is vulnerable via fingerprint
+     *
+     * @param item storage item
+     * @return list of CVEs
+     */
+    public HashSet<String> getFingerprintVulnerabilities(final StorageFileItem item) {
 
-		boolean vulnerable = false;
+        HashSet<String> cves = new HashSet<String>();
 
-		try {
-			VictimsDBInterface db = getVictimsDB();
+        try {
+            VictimsDBInterface db = getVictimsDB();
+            for (VictimsRecord vr : VictimsScanner.getRecords(item.getInputStream(), item.getName())) {
+                cves = db.getVulnerabilities(vr);
+            }
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
 
-			try {
-				db.synchronize();
-			} catch (Exception ex) {
-				log.error(ex.getMessage(), ex);
-			}
+        }
+        return cves;
+    }
 
-			for (VictimsRecord vr : VictimsScanner.getRecords(item.getInputStream(), item.getName())) {
-				HashSet<String> cves = db.getVulnerabilities(vr);
-				//failed fingerprint check
-				if (!cves.isEmpty()) {
-					log.info("Failed FINGERPRINT " + item.getName());
-					vulnerable = true;
-				}
-			}
-		} catch (Exception ex) {
-			log.error(ex.getMessage(), ex);
+    /**
+     * check if storage file is vulnerable via meta data
+     *
+     * @param item storage item
+     * @return list of CVEs
+     */
+    public HashSet<String> getMetadataVulnerabilities(final StorageFileItem item) {
 
-		}
-		return vulnerable;
-	}
+        HashSet<String> cves = new HashSet<String>();
 
-	/**
-	 * check if storage file is vulnerable via meta data
-	 *
-	 * @param item storage item
-	 * @return vulnerability indicator
-	 */
-	public boolean isVulnerableMetadata(final StorageFileItem item) {
+        try {
+            VictimsDBInterface db = getVictimsDB();
+            for (VictimsRecord vr : VictimsScanner.getRecords(item.getInputStream(), item.getName())) {
 
-		boolean vulnerable = false;
+                for (String key : vr.getMetaData().keySet()) {
+                    HashSet<String> cveCheck = db.getVulnerabilities(vr.getMetaData().get(key));
 
-		try {
-			VictimsDBInterface db = getVictimsDB();
-			for (VictimsRecord vr : VictimsScanner.getRecords(item.getInputStream(), item.getName())) {
+                    if (!cveCheck.isEmpty()) {
+                        cves.addAll(cveCheck);
+                    }
+                }
+            }
 
-				for (String key : vr.getMetaData().keySet()) {
-					HashSet<String> cves = db.getVulnerabilities(vr.getMetaData().get(key));
-					//failed metadata check
-					if (!cves.isEmpty()) {
-						log.info("Failed METADATA " + item.getName());
-						vulnerable = true;
-					}
-				}
-			}
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
 
-		} catch (Exception ex) {
-			log.error(ex.getMessage(), ex);
+        }
+        return cves;
 
-		}
+    }
 
-
-		return vulnerable;
-
-	}
-
-	/**
-	 * sync and return victims db
-	 *
-	 * @return victims db
-	 */
-	private VictimsDBInterface getVictimsDB() {
-		VictimsDBInterface db = null;
-		try {
-			db = VictimsDB.db();
-			db.synchronize();
-		} catch (Exception ex) {
-			log.error(ex.getMessage(), ex);
-		}
-		return db;
-	}
+    /**
+     * sync and return victims db
+     *
+     * @return victims db
+     */
+    private VictimsDBInterface getVictimsDB() {
+        VictimsDBInterface db = null;
+        try {
+            db = VictimsDB.db();
+            db.synchronize();
+        } catch (Exception ex) {
+            log.error(ex.getMessage(), ex);
+        }
+        return db;
+    }
 
 }
 

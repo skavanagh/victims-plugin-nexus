@@ -14,20 +14,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 
 public class VulnerableItemFoundEvent
-		extends AbstractEvent<Repository> {
-	private final StorageFileItem item;
+        extends AbstractEvent<Repository> {
+    private final StorageFileItem item;
 
-	public VulnerableItemFoundEvent(final Repository repository, final StorageFileItem item) {
-		super(repository);
-		this.item = checkNotNull(item);
-	}
+    public VulnerableItemFoundEvent(final Repository repository, final StorageFileItem item) {
+        super(repository);
+        this.item = checkNotNull(item);
+    }
 
-	public Repository getRepository() {
-		return getEventSender();
-	}
 
-	public StorageFileItem getItem() {
-		return item;
-	}
+    public StorageFileItem getItem() {
+        return item;
+    }
 
 }
