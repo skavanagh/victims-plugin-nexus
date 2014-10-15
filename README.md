@@ -3,7 +3,7 @@ victims-plugin-nexus
 
 About
 -----
-Nexus plugin to prevent distribution of vulnerable artifacts when running maven
+Nexus plugin to prevent distribution of vulnerable artifacts when running maven. (see https://github.com/victims)
 
 Prerequisites
 -------------
