@@ -7,8 +7,6 @@ Nexus plugin to prevent distribution of vulnerable artifacts when running maven.
 
 A vulnerable package request will result in a 500 error with a list CVE vulnerabilities.
 
-For Example: http://nexus-keybox.rhcloud.com/nexus/content/repositories/central/org/apache/struts/struts2-core/2.3.12/struts2-core-2.3.12.jar
-
 Prerequisites
 -------------
 Java JDK 1.7 
