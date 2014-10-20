@@ -59,8 +59,6 @@ public class VictimsConfig {
 			if (StringUtils.isBlank(System.getProperty(key)) && StringUtils.isNotBlank(config.get(key))) {
 				System.setProperty(key, config.get(key));
 			}
-			System.out.println("JVM : " + key + " : " + config.get(key));
-
 		}
 
 	}
