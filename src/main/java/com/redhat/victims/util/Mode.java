@@ -11,22 +11,22 @@ package com.redhat.victims.util;
  */
 public enum Mode {
 
-    disabled("disabled"),
-    warning("warning"),
-    fatal("fatal");
+	disabled("disabled"),
+	warning("warning"),
+	fatal("fatal");
 
-    private final String value;
+	private final String value;
 
-    private Mode(final String m) {
-        value = m;
-    }
+	private Mode(final String m) {
+		value = m;
+	}
 
-    public String getValue() {
-        return value;
-    }
+	public String getValue() {
+		return value;
+	}
 
-    @Override
-    public String toString() {
-        return this.getValue();
-    }
+	@Override
+	public String toString() {
+		return this.getValue();
+	}
 }

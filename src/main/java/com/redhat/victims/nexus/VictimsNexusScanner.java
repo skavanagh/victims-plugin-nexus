@@ -22,79 +22,80 @@ import java.util.HashSet;
 @Named
 @Singleton
 public class VictimsNexusScanner
-        extends ComponentSupport
+		extends ComponentSupport
 
 {
 
 
-    /**
-     * check if storage file is vulnerable via fingerprint
-     *
-     * @param item storage item
-     * @return list of CVEs
-     */
-    public HashSet<String> getFingerprintVulnerabilities(final StorageFileItem item) {
+	/**
+	 * check if storage file is vulnerable via fingerprint
+	 *
+	 * @param item storage item
+	 * @return list of CVEs
+	 */
+	public HashSet<String> getFingerprintVulnerabilities(final StorageFileItem item) {
 
-        HashSet<String> cves = new HashSet<String>();
+		HashSet<String> cves = new HashSet<String>();
 
-        try {
-            VictimsDBInterface db = getVictimsDB();
-            for (VictimsRecord vr : VictimsScanner.getRecords(item.getInputStream(), item.getName())) {
-                cves = db.getVulnerabilities(vr);
-            }
-        } catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
+		try {
+			VictimsDBInterface db = getVictimsDB();
+			for (VictimsRecord vr : VictimsScanner.getRecords(item.getInputStream(), item.getName())) {
+				cves = db.getVulnerabilities(vr);
+			}
+		} catch (Exception ex) {
+			log.error(ex.getMessage(), ex);
 
-        }
-        return cves;
-    }
+		}
+		return cves;
+	}
 
-    /**
-     * check if storage file is vulnerable via meta data
-     *
-     * @param item storage item
-     * @return list of CVEs
-     */
-    public HashSet<String> getMetadataVulnerabilities(final StorageFileItem item) {
+	/**
+	 * check if storage file is vulnerable via meta data
+	 *
+	 * @param item storage item
+	 * @return list of CVEs
+	 */
+	public HashSet<String> getMetadataVulnerabilities(final StorageFileItem item) {
 
-        HashSet<String> cves = new HashSet<String>();
+		HashSet<String> cves = new HashSet<String>();
 
-        try {
-            VictimsDBInterface db = getVictimsDB();
-            for (VictimsRecord vr : VictimsScanner.getRecords(item.getInputStream(), item.getName())) {
+		try {
+			VictimsDBInterface db = getVictimsDB();
+			for (VictimsRecord vr : VictimsScanner.getRecords(item.getInputStream(), item.getName())) {
 
-                for (String key : vr.getMetaData().keySet()) {
-                    HashSet<String> cveCheck = db.getVulnerabilities(vr.getMetaData().get(key));
+				for (String key : vr.getMetaData().keySet()) {
+					HashSet<String> cveCheck = db.getVulnerabilities(vr.getMetaData().get(key));
 
-                    if (!cveCheck.isEmpty()) {
-                        cves.addAll(cveCheck);
-                    }
-                }
-            }
+					if (!cveCheck.isEmpty()) {
+						cves.addAll(cveCheck);
+					}
+				}
+			}
 
-        } catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
+		} catch (Exception ex) {
+			log.error(ex.getMessage(), ex);
 
-        }
-        return cves;
+		}
+		return cves;
 
-    }
+	}
 
-    /**
-     * sync and return victims db
-     *
-     * @return victims db
-     */
-    private VictimsDBInterface getVictimsDB() {
-        VictimsDBInterface db = null;
-        try {
-            db = VictimsDB.db();
-            db.synchronize();
-        } catch (Exception ex) {
-            log.error(ex.getMessage(), ex);
-        }
-        return db;
-    }
+	/**
+	 * sync and return victims db
+	 *
+	 * @return victims db
+	 */
+	private VictimsDBInterface getVictimsDB() {
+		VictimsDBInterface db = null;
+		try {
+			db = VictimsDB.db();
+			//todo add option and logic to set update interval
+			db.synchronize();
+		} catch (Exception ex) {
+			log.error(ex.getMessage(), ex);
+		}
+		return db;
+	}
 
 }
 
