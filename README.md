@@ -39,8 +39,7 @@ Build victims-plugin-nexus
     cd victims-plugin-nexus
     mvn clean package
 
-Unzip `victims-plugin-nexus-2.10.0-02-bundle.zip` in the `$NEXUS_HOME/nexus/WEB-INF/plugin-repository`
-directory and restart nexus
+Unzip `victims-plugin-nexus-2.10.0-02-bundle.zip` in the `$NEXUS_HOME/nexus/WEB-INF/plugin-repository` directory and restart nexus
 
 Author
 ------
