@@ -17,7 +17,7 @@
     <groupId>com.redhat.victims.nexus</groupId>
     <artifactId>victims-plugin-nexus</artifactId>
     <name>Nexus Victims Plugin</name>
-    <description>Prevents distributing vulnerable artifacts</description>
+    <description>Prevents distribution of vulnerable artifacts</description>
     <packaging>nexus-plugin</packaging>
 
 
